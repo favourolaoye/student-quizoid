@@ -1,66 +1,83 @@
-'use client';
-
-import { useState, useEffect } from 'react';
+"use client"
+import React, { useState } from 'react';
 import axios from 'axios';
-import { useRouter, useSearchParams } from 'next/navigation';
 
-const UploadFace = () => {
-  const [faceImages, setFaceImages] = useState<File[]>([]);
-  const [message, setMessage] = useState('');
-  const [extractedToken, setExtractedToken] = useState('');
-  const searchParams = useSearchParams();
+const Page = () => {
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState<boolean>(false);
+  const [message, setMessage] = useState<string>('');
 
-  useEffect(() => {
-    const token = searchParams.get('token');
-    if (token) {
-      setExtractedToken(token);
-    }
-  }, [searchParams]);
-
-  const router = useRouter();
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setFaceImages(Array.from(e.target.files));
-    }
+  // Handle file selection
+  const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedFiles(event.target.files ? Array.from(event.target.files) : []);
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (faceImages.length === 0) {
-      setMessage('Please select images.');
+  // Handle form submission and file upload
+  const onUpload = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (selectedFiles.length === 0) {
+      setMessage('Please select at least one image.');
       return;
     }
-  
+
+    setUploading(true);
+
     const formData = new FormData();
-    faceImages.forEach((image) => {
-      formData.append('faceImages', image); 
+    selectedFiles.forEach(file => {
+      formData.append('faceImages', file); // Ensure this key matches with backend
     });
-  
+
     try {
-      const response = await axios.post(`http://localhost:3000/api/students/upload-face/${extractedToken}`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      const queryParams = new URLSearchParams(window.location.search);
+      const token = queryParams.get('token');
+
+      if (!token) {
+        throw new Error('Token is missing from URL.');
+      }
+
+      const response = await axios.post(`http://localhost:3000/api/students/upload-face?token=${token}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       });
-  
-      const studentId = response.data.studentId; // Assuming your response contains studentId
-      setMessage('Face images uploaded successfully');
-      router.push(`/view-face?id=${studentId}`);
+
+      setMessage(response.data.message || 'Images uploaded successfully.');
     } catch (error: any) {
-      setMessage('Error uploading face images');
+      setMessage(error.response?.data?.message || 'Error uploading images. Please try again.');
+    } finally {
+      setUploading(false);
     }
   };
-  
 
   return (
-    <div>
-      <h1>Upload Face Images</h1>
-      <form onSubmit={handleSubmit}>
-        <input type="file" accept="image/*" multiple onChange={handleFileChange} required />
-        <button type="submit">Upload</button>
+    <div className="max-w-md mx-auto mt-10">
+      <h2 className="text-xl font-semibold text-center mb-6">Upload Your Face Images</h2>
+      <form onSubmit={onUpload}>
+        <input 
+          type="file" 
+          accept="image/*" 
+          multiple 
+          onChange={onFileChange} 
+          className="block w-full text-sm text-gray-900 border border-gray-300 rounded cursor-pointer bg-gray-50"
+        />
+
+        <button
+          type="submit"
+          disabled={uploading}
+          className={`w-full mt-4 bg-blue-500 text-white py-2 px-4 rounded ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          {uploading ? 'Uploading...' : 'Upload Images'}
+        </button>
       </form>
-      <p>{message}</p>
+
+      {message && (
+        <p className={`mt-4 text-center ${message.includes('Error') ? 'text-red-500' : 'text-green-500'}`}>
+          {message}
+        </p>
+      )}
     </div>
   );
 };
 
-export default UploadFace;
+export default Page;
