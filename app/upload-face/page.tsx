@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import React, { useState } from 'react';
 import axios from 'axios';
 
@@ -6,10 +6,27 @@ const Page = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState<boolean>(false);
   const [message, setMessage] = useState<string>('');
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
 
   // Handle file selection
   const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedFiles(event.target.files ? Array.from(event.target.files) : []);
+    const files = event.target.files ? Array.from(event.target.files) : [];
+    
+    // Validate file types and sizes
+    const validTypes = ['image/jpeg', 'image/png'];
+    const maxSize = 1024 * 1024; // 1 MB
+
+    const invalidFiles = files.filter(file => 
+      !validTypes.includes(file.type) || file.size > maxSize
+    );
+
+    if (invalidFiles.length > 0) {
+      setMessage('Please select valid image files (JPEG, PNG) and ensure they are under 1MB.');
+      return;
+    }
+
+    setMessage('');
+    setSelectedFiles(files);
   };
 
   // Handle form submission and file upload
@@ -39,6 +56,10 @@ const Page = () => {
       const response = await axios.post(`http://localhost:3000/api/students/upload-face?token=${token}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
+        },
+        onUploadProgress: (progressEvent: any) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress(percentCompleted);
         }
       });
 
@@ -47,6 +68,7 @@ const Page = () => {
       setMessage(error.response?.data?.message || 'Error uploading images. Please try again.');
     } finally {
       setUploading(false);
+      setUploadProgress(0); // Reset progress after upload
     }
   };
 
@@ -69,6 +91,17 @@ const Page = () => {
         >
           {uploading ? 'Uploading...' : 'Upload Images'}
         </button>
+
+        {uploading && (
+          <div className="w-full mt-2 bg-gray-200 rounded-full">
+            <div
+              className="bg-blue-500 text-xs font-medium text-blue-100 text-center p-0.5 leading-none rounded-full"
+              style={{ width: `${uploadProgress}%` }}
+            >
+              {uploadProgress}%
+            </div>
+          </div>
+        )}
       </form>
 
       {message && (

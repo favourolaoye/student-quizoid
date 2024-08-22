@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios, { AxiosResponse } from 'axios';
+
 export default function Login() {
     const [formData, setFormData] = useState({
         matricNo: '',
@@ -23,15 +24,16 @@ export default function Login() {
           setMessage(response.data.message);
           if (response.data.token) {
             localStorage.setItem('token', response.data.token);
-            router.push('/dashboard');
+            router.push('/auth/face-verify');
           }
         } catch (error : any) {
           if (error.response && error.response.data && error.response.data.message) {
-            setMessage(error.response.data.message); // Backend-specific error message
+            setMessage(error.response.data.message); 
+            console.error(error.response.data.message);
           } else {
             setMessage('Error logging in');
           }
-          console.error('Error logging in:', error); // For debugging purposes
+          console.error('Error logging in:', error);
         }
       };
     return (
