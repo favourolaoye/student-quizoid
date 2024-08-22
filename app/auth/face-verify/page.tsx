@@ -1,7 +1,8 @@
 'use client';
-
+import Cookies from 'js-cookie';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'react-toastify';
 
 const Page = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -11,7 +12,7 @@ const Page = () => {
 
   useEffect(() => {
     // Retrieve token from localStorage
-    const storedToken = localStorage.getItem('token');
+    const storedToken = Cookies.get("token");
     if (storedToken) {
       setToken(storedToken);
     } else {
@@ -46,6 +47,7 @@ const Page = () => {
   const verifyFace = async (imageData: string) => {
     try {
       if (!token) {
+        toast.info("pls relogin");
         throw new Error('Token is missing');
       }
 
@@ -67,13 +69,14 @@ const Page = () => {
 
       if (result.success) {
         alert('Face verified successfully!');
+        toast.success("verified");
         router.push('/dashboard');
       } else {
-        alert('Face verification failed. Please try again.');
+        toast.error('Face verification failed. Please try again.');
       }
     } catch (error: any) {
-      console.error('Error during face verification:', error.message);
-      alert('An error occurred during face verification. Please try again.');
+      toast.error('Error during face verification'c);
+      console.error("error");
     }
   };
 

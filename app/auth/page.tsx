@@ -1,10 +1,13 @@
 "use client"
 
 import { useState } from 'react';
+import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
 import axios, { AxiosResponse } from 'axios';
+import { useUser } from '@/app/context/userContext';
 
 export default function Login() {
+  
     const [formData, setFormData] = useState({
         matricNo: '',
         password: '',
@@ -12,7 +15,7 @@ export default function Login() {
     
       const [message, setMessage] = useState('');
       const router = useRouter();
-    
+      const { setUser } = useUser();
       const handleChange =(e:any) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
       };
@@ -22,8 +25,11 @@ export default function Login() {
         try {
           const response = await axios.post('http://localhost:3000/api/students/login', formData);
           setMessage(response.data.message);
-          if (response.data.token) {
-            localStorage.setItem('token', response.data.token);
+          const { token, user } = response.data;
+          if (token) {    
+            Cookies.set('token', token, { expires: 1, path: '/', sameSite: 'Strict' });
+            Cookies.set('user', JSON.stringify(user), { expires: 1, path: '/', sameSite: 'Strict' });
+            setUser(user); 
             router.push('/auth/face-verify');
           }
         } catch (error : any) {
