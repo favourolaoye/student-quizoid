@@ -1,4 +1,5 @@
 'use client';
+
 import Cookies from 'js-cookie';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -8,10 +9,11 @@ const Page = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false); // Loading state
   const router = useRouter();
 
   useEffect(() => {
-    // Retrieve token from localStorage
+    // Retrieve token from cookies
     const storedToken = Cookies.get("token");
     if (storedToken) {
       setToken(storedToken);
@@ -45,9 +47,10 @@ const Page = () => {
   };
 
   const verifyFace = async (imageData: string) => {
+    setIsLoading(true); // Start loading
     try {
       if (!token) {
-        toast.info("pls relogin");
+        toast.info("Please relogin");
         throw new Error('Token is missing');
       }
 
@@ -68,24 +71,52 @@ const Page = () => {
       }
 
       if (result.success) {
-        alert('Face verified successfully!');
-        toast.success("verified");
-        router.push('/dashboard');
+        toast.success("Face verified successfully!");
+        Cookies.set("authkey", "face successful", { expires: 1, path: '/', sameSite: 'Strict' });
+        router.push('/dashboard'); // Navigate only on success
       } else {
         toast.error('Face verification failed. Please try again.');
+        setIsLoading(false); // Stop loading if verification fails
       }
     } catch (error: any) {
-      toast.error('Error during face verification'c);
-      console.error("error");
+      toast.error('Error: No match');
+      console.error('Error during face verification:', error);
+      setIsLoading(false); // Stop loading on error
     }
   };
 
   return (
-    <div>
-      <h1>Face Verification</h1>
-      <video ref={videoRef} width="640" height="480" autoPlay></video>
-      <canvas ref={canvasRef} width="640" height="480" style={{ display: 'none' }}></canvas>
-      <button onClick={captureFace} className='bg-black text-white p-3'>Capture and Verify Face</button>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+      <h1 className="text-3xl font-bold mb-4 text-gray-800">Face Verification</h1>
+      {isLoading ? (
+        <div className="loading-indicator mb-4">
+          <p>Verifying face, please wait...</p>
+        </div>
+      ) : (
+        <>
+          <div className="relative mb-4">
+            <video
+              ref={videoRef}
+              width="640"
+              height="480"
+              autoPlay
+              className="border border-gray-300 rounded-lg shadow-md"
+            ></video>
+            <canvas
+              ref={canvasRef}
+              width="640"
+              height="480"
+              style={{ display: 'none' }}
+            ></canvas>
+          </div>
+          <button
+            onClick={captureFace}
+            className="bg-green-500 text-white p-4 rounded-sm shadow-md hover:bg-green-200 transition duration-300"
+          >
+            Capture and Verify Face
+          </button>
+        </>
+      )}
     </div>
   );
 };

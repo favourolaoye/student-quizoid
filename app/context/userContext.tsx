@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 interface User {
   id: string;
   name: string;
-  role: 'student';
+  role: 'admin'|'lecturer'|'student';
   details: any; 
 }
 
@@ -36,13 +36,14 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         setUser(JSON.parse(storedUser));
       }
     } else {
-      router.push(`/auth/login`);
+      router.push(`/auth`);
     }
   }, []);
 
   const logout = () => {
     setUser(null);
     Cookies.remove('token');
+    Cookies.remove('authkey');
     Cookies.remove('user');
   };
 

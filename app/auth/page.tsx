@@ -25,7 +25,12 @@ export default function Login() {
         try {
           const response = await axios.post('http://localhost:3000/api/students/login', formData);
           setMessage(response.data.message);
-          const { token, user } = response.data;
+          const { token, user:userData } = response.data;
+          if(!userData){
+            return;
+          }
+          const {user} = userData;
+          
           if (token) {    
             Cookies.set('token', token, { expires: 1, path: '/', sameSite: 'Strict' });
             Cookies.set('user', JSON.stringify(user), { expires: 1, path: '/', sameSite: 'Strict' });
